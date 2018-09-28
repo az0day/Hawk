@@ -95,7 +95,11 @@ namespace Hawk.ETL.Crawlers
         }
         private static bool isBasicType(Object obj)
         {
-            if (obj is int || obj is string || obj is double || obj is bool || obj is Enum || obj == null)
+            if (obj is int || obj is string || obj is double || obj is bool || obj is Enum || obj is Int64)
+            {
+                return true;
+            }
+            if (obj == null)
             {
                 return true;
             }
@@ -211,7 +215,9 @@ namespace Hawk.ETL.Crawlers
         }
         public static object Parse(string code)
         {
-            code = code.Trim();
+                   // code = Regex.Replace(code, "^[\r\n\b]+", "");
+
+            code = code.Replace("\r", "").Replace("\n", "");
             if (code.StartsWith("{") || code.StartsWith("["))
             {
                 return JsonSeriaize(code);
@@ -232,7 +238,7 @@ namespace Hawk.ETL.Crawlers
                     {
                         return JsSeriaize(code);
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         return code;
                     }
@@ -246,6 +252,8 @@ namespace Hawk.ETL.Crawlers
         private static object JsonSeriaize(string code)
         {
            dynamic js= JsonConvert.Import(code);
+            if (js.ToString() == "")
+                return code;
             return _JsonSeriaize(js);
         }
 

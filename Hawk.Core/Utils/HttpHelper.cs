@@ -426,12 +426,19 @@ namespace Hawk.Core.Utils
             {
                 url = "http://" + url;
             }
-            // 验证证书
-            if (url.Contains("https"))
-                ServicePointManager.ServerCertificateValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) => true;
+          
             //初始化对像，并设置请求的URL地址
             var request = (HttpWebRequest) WebRequest.Create(GetUrl(url));
+            // 验证证书
+            if (url.Contains("https"))
+            {
+                
+                .ServerCertificateValidationCallback =
+                    (sender, certificate, chain, sslPolicyErrors) => true;
+                //ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(CheckValidationResult);
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls|(SecurityProtocolType)768|(SecurityProtocolType)3072;
+                request.ProtocolVersion = HttpVersion.Version10;
+            }
             SetRequest(item, request, desturl, post);
             encoding = AttributeHelper.GetEncoding(item.Encoding);
             return request;
@@ -539,7 +546,18 @@ namespace Hawk.Core.Utils
                 var request = SetRequest(requestitem, url, post);
                 var r = GetHttpRequestData(request, requestitem,out responseHeaders, out code);
                 if (!IsSuccess(code))
+                {
+                    if(code==HttpStatusCode.Forbidden)
+                        RequestManager.Instance.ForbidCount++;
+                     if(code==HttpStatusCode.RequestTimeout||code==HttpStatusCode.GatewayTimeout)
+
+                        RequestManager.Instance.TimeoutCount++;
+                    
+                    XLogSys.Print.Warn($"HTTP Request Failed {code} | {requestitem.URL} ");
                     return "HTTP错误，类型:" + code;
+
+                }
+                XLogSys.Print.Debug($"HTTP Request Success {code} | {requestitem.URL} ");
                 return r;
             }
             catch (Exception ex)
